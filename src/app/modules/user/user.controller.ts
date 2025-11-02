@@ -86,10 +86,28 @@ const getAllUsers = catchAsync(
     // })
     sendResponse(res, {
       success: true,
-      statusCode: httpStatus.CREATED,
+      statusCode: httpStatus.OK,
       message: "All Users Retrieved Successfully",
       data: result.data,
       meta: result.meta,
+    });
+  }
+);
+
+const getMe = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const verifiedUser = req.user as JwtPayload;
+
+    // we assume your checkAuth middleware adds "email" to req.user
+    const email = verifiedUser?.email;
+
+    const user = await UserServices.getMeInfo(email);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "User Retrieved Successfully",
+      data: user,
     });
   }
 );
@@ -100,6 +118,7 @@ export const UserControllers = {
   createUser,
   getAllUsers,
   updateUser,
+  getMe,
 };
 
 // route matching -> controller -> service -> model -> DB

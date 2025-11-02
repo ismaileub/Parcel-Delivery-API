@@ -26,7 +26,12 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(cookieParser());
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://parcel-delivery-app.vercel.app"],
+    credentials: true,
+  })
+);
 
 app.use("/api/auth", AuthRoutes);
 app.use("/api/users", UserRoutes);

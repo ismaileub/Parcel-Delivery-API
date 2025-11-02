@@ -18,7 +18,8 @@ const credentialsLogin = catchAsync(
 
     passport.authenticate("local", async (err: any, user: any, info: any) => {
       if (err) {
-        return next(new AppError(401, err));
+        console.log(err);
+        return next(new AppError(402, err));
       }
 
       if (!user) {
@@ -40,8 +41,8 @@ const credentialsLogin = catchAsync(
         statusCode: httpStatus.OK,
         message: "User Logged In Successfully",
         data: {
-          accessToken: userTokens.accessToken,
-          refreshToken: userTokens.refreshToken,
+          // accessToken: userTokens.accessToken,
+          // refreshToken: userTokens.refreshToken,
           user: rest,
         },
       });
@@ -95,9 +96,29 @@ const googleCallbackController = catchAsync(
   }
 );
 
+const logout = catchAsync(async (req: Request, res: Response) => {
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Logged out successfully",
+    data: undefined,
+  });
+});
+
 export const AuthControllers = {
   credentialsLogin,
   getNewAccessToken,
-
+  logout,
   googleCallbackController,
 };

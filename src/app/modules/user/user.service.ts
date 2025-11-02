@@ -114,8 +114,23 @@ const getAllUsers = async () => {
   };
 };
 
+const getMeInfo = async (email: string) => {
+  if (!email) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Email not found in token");
+  }
+
+  const user = await User.findOne({ email }).select("-password"); // omit password
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  return user;
+};
+
 export const UserServices = {
   createUser,
   getAllUsers,
   updateUser,
+  getMeInfo,
 };
