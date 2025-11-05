@@ -41,7 +41,6 @@ export const checkAuth =
 
       next();
     } catch (error) {
-      console.log("Auth error:", error);
       next(error);
     }
   };

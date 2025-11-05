@@ -28,7 +28,10 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://parcel-delivery-app.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://parcel-delivery-system-frontend-delta.vercel.app",
+    ],
     credentials: true,
   })
 );

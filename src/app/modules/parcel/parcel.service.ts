@@ -224,6 +224,7 @@ const getAllParcels = async (filters: any) => {
       page,
       limit,
       total,
+      totalPages: Math.ceil(total / limit),
     },
     data: parcels,
   };

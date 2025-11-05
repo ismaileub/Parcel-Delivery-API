@@ -98,7 +98,6 @@ const getMe = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const verifiedUser = req.user as JwtPayload;
 
-    // we assume your checkAuth middleware adds "email" to req.user
     const email = verifiedUser?.email;
 
     const user = await UserServices.getMeInfo(email);
