@@ -99,13 +99,17 @@ const googleCallbackController = catchAsync(
 const logout = catchAsync(async (req: Request, res: Response) => {
   res.clearCookie("accessToken", {
     httpOnly: true,
+    // secure: false,
+    // sameSite: "lax"
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   });
   res.clearCookie("refreshToken", {
     httpOnly: true,
+    // secure: false,
+    // sameSite: "lax"
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   });
 
   sendResponse(res, {
