@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response } from "express";
 import httpStatus from "http-status-codes";
 import { catchAsync } from "../../utils/catchAsync";
@@ -33,6 +34,26 @@ const updateParcelStatus = catchAsync(async (req: Request, res: Response) => {
     data: updatedParcel,
   });
 });
+
+const confirmDeliveryByReceiver = catchAsync(
+  async (req: Request, res: Response) => {
+    const { parcelId } = req.params;
+
+    const { userId }: any = req.user;
+
+    const updatedParcel = await parcelService.confirmDeliveryByReceiver(
+      parcelId,
+      userId
+    );
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: `Parcel Receive By Receiver  successfully`,
+      data: updatedParcel,
+    });
+  }
+);
 
 const cancelParcel = catchAsync(async (req: Request, res: Response) => {
   const senderId = (req.user as JwtPayload).userId;
@@ -130,7 +151,8 @@ const getAllParcels = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: httpStatus.OK,
     message: "All parcels fetched successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -160,4 +182,5 @@ export const parcelController = {
   getReceiverParcels,
   getAllParcels,
   getSingleParcel,
+  confirmDeliveryByReceiver,
 };

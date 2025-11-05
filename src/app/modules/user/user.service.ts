@@ -103,13 +103,26 @@ const updateUser = async (
   return updatedUser;
 };
 
-const getAllUsers = async () => {
-  const users = await User.find({});
+const getAllUsers = async (page = 1, limit = 10) => {
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const users = await User.find({})
+    .select("-password")
+    .skip(skip)
+    .limit(limitNumber);
+
   const totalUsers = await User.countDocuments();
+
   return {
     data: users,
     meta: {
       total: totalUsers,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(totalUsers / limitNumber),
     },
   };
 };
@@ -119,10 +132,20 @@ const getMeInfo = async (email: string) => {
     throw new AppError(httpStatus.BAD_REQUEST, "Email not found in token");
   }
 
-  const user = await User.findOne({ email }).select("-password"); // omit password
+  const user = await User.findOne({ email }).select("-password");
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  return user;
+};
+
+const getReceiver = async (email: string) => {
+  const user = await User.findOne({ email }).select("-password");
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "Receiver email not found");
   }
 
   return user;
@@ -133,4 +156,5 @@ export const UserServices = {
   getAllUsers,
   updateUser,
   getMeInfo,
+  getReceiver,
 };

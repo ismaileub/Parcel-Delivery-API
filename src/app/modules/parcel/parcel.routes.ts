@@ -17,7 +17,7 @@ router.post(
 );
 
 router.patch(
-  "/status/:parcelId",
+  "/update-status/:parcelId",
   checkAuth("ADMIN", "SUPER_ADMIN"),
   validateRequest(updateParcelZodSchema),
   parcelController.updateParcelStatus
@@ -61,6 +61,12 @@ router.get(
   "/receiver/all",
   checkAuth("RECEIVER"),
   parcelController.getReceiverParcels
+);
+
+router.patch(
+  "/receiver/confirm-delivery/:parcelId",
+  checkAuth("RECEIVER"),
+  parcelController.confirmDeliveryByReceiver
 );
 
 router.get(

@@ -6,6 +6,7 @@ import { JwtPayload } from "jsonwebtoken";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { UserServices } from "./user.service";
+import AppError from "../../errorHelpers/AppError";
 
 // const createUserFunction = async (req: Response, res: Response) => {
 
@@ -77,13 +78,12 @@ const updateUser = catchAsync(
 
 const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const result = await UserServices.getAllUsers();
+    // Get page and limit from query params, with defaults
+    const { page = 1, limit = 10 } = req.query;
 
-    // res.status(httpStatus.OK).json({
-    //     success: true,
-    //     message: "All Users Retrieved Successfully",
-    //     data: users
-    // })
+    // Pass them to the service (convert to number)
+    const result = await UserServices.getAllUsers(Number(page), Number(limit));
+
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
@@ -112,6 +112,34 @@ const getMe = catchAsync(
   }
 );
 
+const getByMail = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.query as { email?: string };
+    console.log(email);
+
+    if (!email) {
+      return next(
+        new AppError(httpStatus.BAD_REQUEST, "Email parameter is required")
+      );
+    }
+
+    const user = await UserServices.getReceiver(email);
+
+    if (!user || user.role !== "RECEIVER") {
+      return next(
+        new AppError(httpStatus.NOT_FOUND, "Receiver not found by this mail")
+      );
+    }
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "User retrieved successfully",
+      data: user,
+    });
+  }
+);
+
 // function => try-catch catch => req-res function
 
 export const UserControllers = {
@@ -119,6 +147,7 @@ export const UserControllers = {
   getAllUsers,
   updateUser,
   getMe,
+  getByMail,
 };
 
 // route matching -> controller -> service -> model -> DB

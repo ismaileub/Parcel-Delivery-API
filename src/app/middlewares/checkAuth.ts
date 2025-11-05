@@ -29,7 +29,6 @@ export const checkAuth =
         throw new AppError(httpStatus.BAD_REQUEST, "User does not exist");
       }
 
-      // Check role permissions
       if (!authRoles.includes(decoded.role)) {
         throw new AppError(
           httpStatus.FORBIDDEN,

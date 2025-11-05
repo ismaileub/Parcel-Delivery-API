@@ -10,17 +10,36 @@ import { IParcel, parcelStatus } from "./parcel.interface";
 const createParcel = async (data: Partial<IParcel>, creatorId: string) => {
   const { sender, receiver } = data;
 
+  // 1️⃣ Validate sender and receiver
   const senderExists = await User.findById(sender);
   if (!senderExists) throw new AppError(404, "Sender not found");
 
   const receiverExists = await User.findById(receiver);
   if (!receiverExists) throw new AppError(404, "Receiver not found");
 
+  // 2️⃣ Generate tracking ID
   const trackingId = generateTrackingId();
 
+  // 3️⃣ Automatically set deliveryDate → 3 days after now
+  const createdAt = new Date();
+  const deliveryDate = new Date(createdAt);
+  deliveryDate.setDate(deliveryDate.getDate() + 3);
+
+  // 4️⃣ Create parcel
   const newParcel = await Parcel.create({
     ...data,
     trackingId,
+    deliveryDate,
+    currentStatus: "Pending",
+    statusLogs: [
+      {
+        status: "Pending",
+        updateAt: new Date(),
+        updatedBy: new Types.ObjectId(creatorId),
+        location: "Sender Warehouse",
+        note: "Parcel created and awaiting pickup",
+      },
+    ],
   });
 
   return newParcel;
@@ -55,6 +74,28 @@ const updateParcelStatus = async (
   }
   return parcel;
 };
+const confirmDeliveryByReceiver = async (
+  parcelId: string,
+  receiverId: Types.ObjectId
+) => {
+  const parcel = await Parcel.findById(parcelId);
+  if (!parcel) throw new AppError(404, "Parcel not found");
+
+  if (parcel.currentStatus === "Out for Delivery") {
+    parcel.currentStatus = "Delivered";
+    parcel.statusLogs.push({
+      status: "Delivered",
+      updateAt: new Date(),
+      updatedBy: receiverId,
+      location: "",
+      note: "Parcel taken by receiver",
+    });
+    await parcel.save();
+  } else {
+    throw new AppError(401, "Can not update now");
+  }
+  return parcel;
+};
 
 ///
 //
@@ -69,6 +110,10 @@ const cancelParcel = async (parcelId: string, senderId: string) => {
     ["Dispatched", "Delivered", "In-Transit"].includes(parcel.currentStatus)
   ) {
     throw new AppError(400, "Cannot cancel at this stage");
+  }
+
+  if (parcel.currentStatus === "Cancelled") {
+    throw new AppError(400, "Already Cancelled");
   }
   parcel.currentStatus = "Cancelled";
   parcel.statusLogs.push({
@@ -148,53 +193,31 @@ const trackParcel = async (trackingId: string) => {
 };
 
 const getParcelsBySender = async (senderId: string) => {
-  return Parcel.find({ sender: senderId });
+  return Parcel.find({ sender: senderId }).populate("receiver", "email");
 };
 
 const getParcelsByReceiver = async (receiverId: string) => {
-  return Parcel.find({ receiver: receiverId });
+  return Parcel.find({ receiver: receiverId }).populate("sender", "email");
 };
 
 const getAllParcels = async (filters: any) => {
-  const query: any = {};
-
-  // Filter by current status
-  if (filters.status) {
-    query.currentStatus = new RegExp(filters.status, "i");
-  }
-
-  // Filter by exact deliveryDate (YYYY-MM-DD)
-  if (filters.deliveryDate) {
-    query.deliveryDate = new Date(filters.deliveryDate);
-  }
-
-  // Optional: Filter by delivery date range
-  if (filters.dateFrom || filters.dateTo) {
-    query.deliveryDate = {};
-    if (filters.dateFrom) {
-      query.deliveryDate.$gte = new Date(filters.dateFrom);
-    }
-    if (filters.dateTo) {
-      query.deliveryDate.$lte = new Date(filters.dateTo);
-    }
-  }
-
-  // Optional: Add pagination
   const page = Number(filters.page) || 1;
   const limit = Number(filters.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Optional: Sort by creation or delivery date
+  // Sorting setup
   const sortBy = filters.sortBy || "createdAt";
   const sortOrder = filters.sortOrder === "asc" ? 1 : -1;
 
-  const parcels = await Parcel.find(query)
-    .populate("sender receiver")
+  // Fetch parcels with pagination and sorting
+  const parcels = await Parcel.find()
+    .populate("receiver", "email")
     .sort({ [sortBy]: sortOrder })
     .skip(skip)
     .limit(limit);
 
-  const total = await Parcel.countDocuments(query);
+  // Count total documents
+  const total = await Parcel.countDocuments();
 
   return {
     meta: {
@@ -237,4 +260,5 @@ export const parcelService = {
   getParcelsByReceiver,
   getAllParcels,
   getParcelById,
+  confirmDeliveryByReceiver,
 };
